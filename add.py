@@ -1,80 +1,75 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.multioutput import MultiOutputClassifier
-from sklearn.metrics import accuracy_score
+import numpy as np
 
-# -----------------------------
-# 1. Load Dataset
-# -----------------------------
-df = pd.read_csv("your_dataset.csv")
+input_path = "water_potability.csv"
+output_path = "water_potability2.csv"
 
-# Features (Inputs)
-X = df[['A', 'B', 'C', 'D']]
+df = pd.read_csv(input_path)
 
-# Targets (Outputs - strings)
-y = df[['E', 'F']]
+# Fill missing values with median for numeric columns
+numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+if "Potability" in numeric_cols:
+    numeric_cols.remove("Potability")
 
-# -----------------------------
-# 2. Encode String Labels
-# -----------------------------
-le_E = LabelEncoder()
-le_F = LabelEncoder()
+df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
 
-y_encoded = pd.DataFrame({
-    'E': le_E.fit_transform(y['E']),
-    'F': le_F.fit_transform(y['F'])
-})
+# ---------------------------
+# Define Safe Ranges (WHO/BIS)
+# ---------------------------
+safe_ranges = {
+    "ph": (6.5, 8.5),
+    "Hardness": (50, 150),
+    "Solids": (0, 1000),  # typical acceptable up to 1000
+    "Chloramines": (0.2, 2),
+    "Sulfate": (0, 250),
+    "Conductivity": (50, 500),
+    "Organic_carbon": (0, 10),
+    "Trihalomethanes": (0, 80),
+    "Turbidity": (0, 5),
+}
 
-# -----------------------------
-# 3. Train-Test Split
-# -----------------------------
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y_encoded, test_size=0.2, random_state=42
-)
+# ---------------------------
+# Disease Mapping
+# ---------------------------
+disease_map = {
+    "ph": "Skin/eye irritation; Gastrointestinal upset",
+    "Hardness": "Taste/mineral effects; possible kidney stone risk",
+    "Solids": "Gastrointestinal illness (diarrhea, stomach upset)",
+    "Chloramines": "Low: bacterial risk; High: irritation/chemical upset",
+    "Sulfate": "Laxative effects / diarrhea at high concentrations",
+    "Conductivity": "Indicates dissolved solids — possible gastrointestinal issues",
+    "Organic_carbon": "Can form harmful byproducts during disinfection",
+    "Trihalomethanes": "Long-term: liver/kidney issues, cancer risk",
+    "Turbidity": "Waterborne pathogens — diarrhea, cholera, typhoid risk",
+}
 
-# -----------------------------
-# 4. Model Training
-# -----------------------------
-base_model = RandomForestClassifier(random_state=42)
-model = MultiOutputClassifier(base_model)
+# ---------------------------
+# Disease Assignment Function
+# ---------------------------
+def assign_diseases(row):
+    issues = []
+    for col, (low, high) in safe_ranges.items():
+        if col not in row:
+            continue
+        val = row[col]
+        if pd.isna(val):
+            continue
+        if not (low <= val <= high):
+            if col in disease_map:
+                issues.append(disease_map[col])
+            else:
+                issues.append(f"{col} out-of-range")
+    issues = sorted(set(issues))
+    if len(issues) == 0:
+        return "None (potable)"
+    return "; ".join(issues)
 
-model.fit(X_train, y_train)
+# ---------------------------
+# Apply Logic
+# ---------------------------
+df["diseases"] = df.apply(assign_diseases, axis=1)
+df["quality"] = df["diseases"].apply(lambda x: "good" if x == "None (potable)" else "bad")
 
-# -----------------------------
-# 5. Evaluation
-# -----------------------------
-y_pred = model.predict(X_test)
-
-print("✅ Model Evaluation")
-print("Accuracy for E:", accuracy_score(y_test['E'], y_pred[:, 0]))
-print("Accuracy for F:", accuracy_score(y_test['F'], y_pred[:, 1]))
-print("-" * 40)
-
-# -----------------------------
-# 6. Prediction Function
-# -----------------------------
-def predict_labels(a, b, c, d):
-    new_data = [[a, b, c, d]]
-    pred_encoded = model.predict(new_data)
-    pred_E = le_E.inverse_transform([pred_encoded[0][0]])[0]
-    pred_F = le_F.inverse_transform([pred_encoded[0][1]])[0]
-    return pred_E, pred_F
-
-# -----------------------------
-# 7. Test with Manual Input
-# -----------------------------
-try:
-    print("🔮 Enter values for A, B, C, D to predict E and F:")
-    a = int(input("Enter A: "))
-    b = int(input("Enter B: "))
-    c = int(input("Enter C: "))
-    d = int(input("Enter D: "))
-
-    pred_E, pred_F = predict_labels(a, b, c, d)
-    print("\n🎯 Predicted E:", pred_E)
-    print("🎯 Predicted F:", pred_F)
-
-except Exception as e:
-    print("⚠️ Error:", e)
+# Save output
+df.to_csv(output_path, index=False)
+print("✅ Processing complete. Results saved to", output_path)
