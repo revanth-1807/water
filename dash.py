@@ -64,8 +64,7 @@ def warning_card(msg):
 # Try importing TensorFlow safely
 try:
     import tensorflow as tf
-    tf_version = tf.__version__
-   # ✅ fixed
+    tf_version = tf.__version__   # ✅ fixed
     st.sidebar.info(f"✅ TensorFlow {tf_version} loaded successfully")
 except ImportError:
     st.sidebar.error("❌ TensorFlow not installed or version mismatch")
@@ -94,7 +93,7 @@ st.sidebar.markdown("Use the sidebar to customize parameters.")
 st.title("💧 Water Quality & Disease Prediction Dashboard")
 st.markdown("This dashboard predicts water safety and potential diseases based on sensor readings.")
 
-col1, col2 = st.columns([1, 2])
+col1,spacer, col2 = st.columns([1,0.2, 2])
 
 with col1:
     st.subheader("📍 Location Info")
@@ -143,12 +142,11 @@ with col1:
     predict_btn = st.button("🔮 Predict", use_container_width=True)
 
 with col2:
+    st.subheader("📈 Water Impurity Over Time")
     st.write("")
     st.write("")  
-    st.subheader("📈 Water Impurity Over Time")
-    # st.markdown("<br><br>", unsafe_allow_html=True)
-    # st.markdown("<br><br>", unsafe_allow_html=True)
-    # st.markdown("<br><br>", unsafe_allow_html=True)
+    st.write("")
+    # st.write("")  
     # Example: generate sample impurity rate data
     time_steps = np.arange(1, 11)  # 10 time intervals
     impurity_rate = np.cumsum(np.random.randint(1, 5, size=10))  # increasing impurity
