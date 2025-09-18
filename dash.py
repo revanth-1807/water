@@ -6,9 +6,10 @@ from geopy.geocoders import Nominatim
 import pydeck as pdk
 from streamlit_js_eval import get_geolocation
 import geocoder
+import time # 👈 Import the time library
 
 # -----------------------------
-# Custom Card Components
+# Custom Card Components (No changes here)
 # -----------------------------
 def safe_card(quality, disease):
     st.markdown(f"""
@@ -64,14 +65,14 @@ def warning_card(msg):
 # Try importing TensorFlow safely
 try:
     import tensorflow as tf
-    tf_version = tf.__version__   # ✅ fixed
+    tf_version = tf.__version__  # ✅ fixed
     st.sidebar.info(f"✅ TensorFlow {tf_version} loaded successfully")
 except ImportError:
     st.sidebar.error("❌ TensorFlow not installed or version mismatch")
     tf = None
 
 # -----------------------------
-# Load model and preprocessing tools safely
+# Load model and preprocessing tools safely (No changes here)
 # -----------------------------
 model, scaler, le_quality, le_diseases = None, None, None, None
 try:
@@ -85,7 +86,7 @@ except Exception as e:
     model = None
 
 # -----------------------------
-# Streamlit UI Setup
+# Streamlit UI Setup (No changes here, except for the new section)
 # -----------------------------
 st.set_page_config(page_title="Water Quality & Disease Prediction", page_icon="💧", layout="wide")
 st.sidebar.title("⚙ Settings")
@@ -98,7 +99,6 @@ col1,spacer, col2 = st.columns([1,0.2, 2])
 with col1:
     st.subheader("📍 Location Info")
 
-    # Try browser geolocation first
     location = get_geolocation()
 
     if location:
@@ -106,18 +106,15 @@ with col1:
         lon = location["coords"]["longitude"]
         st.success(f"✅ Auto-detected Location: {lat}, {lon}")
     else:
-        # Fallback: use IP-based geolocation
         g = geocoder.ip('me')
         if g.ok:
             lat, lon = g.latlng
             st.info(f"🌍 Approx Location from IP: {lat}, {lon}")
         else:
-            # Final fallback: manual input
             st.warning("⚠ Could not detect location. Please enter manually.")
             lat = st.number_input("Latitude", value=16.836565, format="%.6f")
             lon = st.number_input("Longitude", value=81.517963, format="%.6f")
 
-    # Reverse Geocode → get human-readable area
     geolocator = Nominatim(user_agent="water_app")
     try:
         loc = geolocator.reverse((lat, lon), language='en', timeout=10)
@@ -143,26 +140,119 @@ with col1:
 
 with col2:
     st.subheader("📈 Water Impurity Over Time")
-    st.write("")
-    st.write("")  
-    st.write("")
-    # st.write("")  
-    # Example: generate sample impurity rate data
-    time_steps = np.arange(1, 11)  # 10 time intervals
-    impurity_rate = np.cumsum(np.random.randint(1, 5, size=10))  # increasing impurity
-
+    time_steps = np.arange(1, 11)
+    impurity_rate = np.cumsum(np.random.randint(1, 5, size=10))
     df_chart = pd.DataFrame({
         "Time": time_steps,
         "Impurity Rate": impurity_rate
     })
-
     st.line_chart(df_chart.set_index("Time"))
+
+    # -----------------------------
+    # NEW: Flowchart with glowing effect
+    # -----------------------------
+    st.markdown("""
+        <style>
+            @keyframes glow {
+                0% { box-shadow: 0 0 5px rgba(0,255,0,0.7), 0 0 10px rgba(0,255,0,0.5); }
+                50% { box-shadow: 0 0 15px rgba(0,255,0,1), 0 0 20px rgba(0,255,0,0.8); }
+                100% { box-shadow: 0 0 5px rgba(0,255,0,0.7), 0 0 10px rgba(0,255,0,0.5); }
+            }
+            .flow-box {
+                border: 2px solid #555;
+                border-radius: 10px;
+                padding: 10px 20px;
+                margin: 10px auto;
+                width: 150px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 1.2em;
+                transition: all 0.3s ease-in-out;
+            }
+            .flow-arrow {
+                height: 30px;
+                display: block;
+                margin: 0 auto;
+            }
+            .glowing-box {
+                animation: glow 1.5s infinite ease-in-out;
+            }
+            .glowing-arrow {
+                animation: glow 1.5s infinite ease-in-out;
+            }
+            .arrow-path {
+                fill: none;
+                stroke: #555;
+                stroke-width: 2px;
+                transition: stroke 0.3s ease-in-out;
+            }
+            .glowing-arrow .arrow-path {
+                stroke: #0F0; /* Green glow color for the arrow */
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.markdown(
+    "<h2 style='text-align: center;'>🔄 Prediction Flow</h2>",
+    unsafe_allow_html=True
+)
+    
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+ 
+    
+
+    
+    # Placeholders for dynamic updates
+    input_box = st.empty()
+    arrow1_svg = st.empty()
+    predict_box = st.empty()
+    arrow2_svg = st.empty()
+    output_box = st.empty()
+    
+    # Function to draw SVG arrow
+    def draw_arrow(glowing=False):
+        stroke_color = '#0F0' if glowing else '#555'
+        return f"""
+            <svg width="100%" height="30" viewBox="0 0 100 30">
+              <path class="arrow-path" d="M50,0 V25 M50,25 L45,20 M50,25 L55,20" style="stroke:{stroke_color};" />
+            </svg>
+        """
+
+    # Initial state: Input box is glowing
+    input_box.markdown(f'<div class="flow-box glowing-box">Input</div>', unsafe_allow_html=True)
+    arrow1_svg.markdown(draw_arrow(), unsafe_allow_html=True)
+    predict_box.markdown(f'<div class="flow-box">Predict</div>', unsafe_allow_html=True)
+    arrow2_svg.markdown(draw_arrow(), unsafe_allow_html=True)
+    output_box.markdown(f'<div class="flow-box">Output</div>', unsafe_allow_html=True)
 
 # -----------------------------
 # Prediction Logic
 # -----------------------------
 if predict_btn:
     st.subheader("📊 Prediction Results")
+
+    # Change state to "Predict" (Input stops glowing, Predict starts)
+    with col2:
+        input_box.markdown(f'<div class="flow-box">Input</div>', unsafe_allow_html=True)
+        arrow1_svg.markdown(draw_arrow(glowing=True), unsafe_allow_html=True)
+        predict_box.markdown(f'<div class="flow-box glowing-box">Predict</div>', unsafe_allow_html=True)
+        output_box.markdown(f'<div class="flow-box">Output</div>', unsafe_allow_html=True)
+        # Simulate processing time
+        time.sleep(1)
 
     if model and scaler:
         input_data = np.array([[ph, hardness, solids, chloramines, sulfate,
@@ -180,16 +270,25 @@ if predict_btn:
         quality_class = "Safe" if 6.5 <= ph <= 8.5 else "Bad"
         disease_class = "None" if quality_class == "Safe" else "Cholera"
 
+    # Change state to "Output" (Predict stops glowing, Output starts)
+    with col2:
+        input_box.markdown(f'<div class="flow-box">Input</div>', unsafe_allow_html=True)
+        arrow1_svg.markdown(draw_arrow(), unsafe_allow_html=True)
+        predict_box.markdown(f'<div class="flow-box">Predict</div>', unsafe_allow_html=True)
+        arrow2_svg.markdown(draw_arrow(glowing=True), unsafe_allow_html=True)
+        output_box.markdown(f'<div class="flow-box glowing-box">Output</div>', unsafe_allow_html=True)
+        time.sleep(1)
+
     # Set map color based on prediction
     if quality_class.lower() == "bad":
         st.error(f"❌ Predicted Quality: {quality_class}")
         st.warning(f"⚠ Predicted Disease Risk: {disease_class}")
         st.info(f"📢 Broadcast Alert: Residents of {area} are notified (simulated).")
-        color = [255, 0, 0]   # Red for unsafe
+        color = [255, 0, 0]  # Red for unsafe
     else:
         st.success(f"✅ Predicted Quality: {quality_class}")
         st.success(f"🩺 Predicted Disease Risk: {disease_class}")
-        color = [0, 0, 255]   # Blue for safe
+        color = [0, 0, 255]  # Blue for safe
 
     # Update map with prediction color
     df_map = pd.DataFrame({
@@ -216,4 +315,4 @@ if predict_btn:
         )
     )
 
-    st.caption("🔵 Safe water   |   🔴 Unsafe water")
+    st.caption("🔵 Safe water  |  🔴 Unsafe water")
