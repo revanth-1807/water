@@ -1,8 +1,8 @@
 streamlit
-numpy
+numpy<2
 pandas
 scikit-learn
-tensorflow
+tensorflow==2.16.1
 geopy
 pydeck
 streamlit-js-eval
